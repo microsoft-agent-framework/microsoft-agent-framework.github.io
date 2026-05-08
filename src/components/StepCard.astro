@@ -1,0 +1,18 @@
+---
+interface Props {
+  step: number;
+  title: string;
+}
+
+const { step, title } = Astro.props;
+---
+
+<section class="card p-5">
+  <div class="mb-3 flex items-center gap-3">
+    <span class="grid size-8 shrink-0 place-items-center rounded-full bg-teal-600 text-sm font-black text-white">{step}</span>
+    <h3 class="text-base font-black text-slate-950">{title}</h3>
+  </div>
+  <div class="text-sm leading-6 text-slate-600">
+    <slot />
+  </div>
+</section>

@@ -1,0 +1,128 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PathHeader from '@/components/PathHeader.astro';
+import SampleCard from '@/components/SampleCard.astro';
+import { getTutorials } from '@/lib/tutorials';
+
+const tutorials = await getTutorials();
+const difficulties = [...new Set(tutorials.map((t) => t.difficulty))];
+const providers = [...new Set(tutorials.map((t) => t.provider))].sort();
+const concepts = [...new Set(tutorials.flatMap((t) => t.concepts))].sort();
+const base = import.meta.env.BASE_URL === '/' ? '' : import.meta.env.BASE_URL;
+---
+
+<BaseLayout title="Tutorials" description="Browse every Agent Framework .NET tutorial.">
+  <div class="mx-auto max-w-7xl px-4 pt-10 sm:px-6 lg:px-8">
+    <PathHeader
+      eyebrow="Course catalog"
+      title="All tutorials"
+      description="Browse every tutorial in one place. Filter by difficulty, provider, or concept to find exactly what you need."
+      stats={[{ label: 'tutorials', value: tutorials.length }]}
+      actions={[{ label: 'Learning paths', href: `${base}/paths`, style: 'ghost' }]}
+    />
+  </div>
+
+  <section class="mx-auto max-w-7xl px-4 pb-14 sm:px-6 lg:px-8">
+    <!-- ─── Filter Bar ──────────────────────────────────────────────── -->
+    <div class="mb-10 glass-card p-6 border-indigo-100 shadow-xl shadow-indigo-500/5">
+      <div class="mb-6 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p class="eyebrow">Search Catalog</p>
+          <h2 class="text-2xl font-900 text-gradient mt-2">Filter the collection</h2>
+        </div>
+        <p id="filter-count" class="text-xs font-900 text-indigo-600 uppercase tracking-widest bg-indigo-50 px-3 py-1 rounded-full">{tutorials.length} tutorials available</p>
+      </div>
+
+      <div class="grid gap-4 md:grid-cols-[1fr_160px_160px_180px]">
+        <label class="block">
+          <span class="mb-2 block text-xs font-900 text-muted uppercase tracking-wider">Keywords</span>
+          <input
+            id="tutorial-search"
+            class="h-11 w-full rounded-xl border-1.5 border-border bg-white px-4 text-sm outline-none transition-all duration-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100"
+            type="search"
+            placeholder="Search lessons…"
+          />
+        </label>
+        <label class="block">
+          <span class="mb-2 block text-xs font-900 text-muted uppercase tracking-wider">Level</span>
+          <select id="difficulty-filter" class="h-11 w-full rounded-xl border-1.5 border-border bg-white px-4 text-sm outline-none transition-all duration-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 appearance-none">
+            <option value="all">All levels</option>
+            {difficulties.map((d) => <option value={d}>{d}</option>)}
+          </select>
+        </label>
+        <label class="block">
+          <span class="mb-2 block text-xs font-900 text-muted uppercase tracking-wider">Provider</span>
+          <select id="provider-filter" class="h-11 w-full rounded-xl border-1.5 border-border bg-white px-4 text-sm outline-none transition-all duration-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 appearance-none">
+            <option value="all">All providers</option>
+            {providers.map((p) => <option value={p}>{p}</option>)}
+          </select>
+        </label>
+        <label class="block">
+          <span class="mb-2 block text-xs font-900 text-muted uppercase tracking-wider">Module</span>
+          <select id="concept-filter" class="h-11 w-full rounded-xl border-1.5 border-border bg-white px-4 text-sm outline-none transition-all duration-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-100 appearance-none">
+            <option value="all">All concepts</option>
+            {concepts.map((c) => <option value={c}>{c}</option>)}
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <!-- ─── Tutorial Grid ───────────────────────────────────────────── -->
+    <div id="tutorial-grid" class="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+      {tutorials.map((tutorial) => <SampleCard tutorial={tutorial} />)}
+    </div>
+    <div id="empty-state" class="hidden glass-card p-12 text-center mt-8 border-dashed border-2 border-indigo-200">
+      <div class="size-16 bg-indigo-50 rounded-2xl flex items-center justify-center mx-auto mb-4">
+        <svg class="size-8 text-indigo-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+      </div>
+      <p class="text-lg font-900 text-ink">No tutorials found</p>
+      <p class="text-sm text-muted mt-2">Try adjusting your filters or search keywords.</p>
+    </div>
+  </section>
+
+  <script>
+    const search = document.querySelector('#tutorial-search');
+    const difficulty = document.querySelector('#difficulty-filter');
+    const provider = document.querySelector('#provider-filter');
+    const concept = document.querySelector('#concept-filter');
+    const cards = Array.from(document.querySelectorAll('[data-tutorial-card]'));
+    const count = document.querySelector('#filter-count');
+    const empty = document.querySelector('#empty-state');
+
+    function valueOf(element) {
+      return element && 'value' in element ? String(element.value) : 'all';
+    }
+
+    function applyFilters() {
+      const query = valueOf(search).trim().toLowerCase();
+      const difficultyValue = valueOf(difficulty);
+      const providerValue = valueOf(provider);
+      const conceptValue = valueOf(concept);
+      let visibleCount = 0;
+
+      cards.forEach((card) => {
+        const title = card.getAttribute('data-title') ?? '';
+        const description = card.getAttribute('data-description') ?? '';
+        const concepts = card.getAttribute('data-concepts') ?? '';
+        const cardDifficulty = card.getAttribute('data-difficulty') ?? '';
+        const cardProvider = card.getAttribute('data-provider') ?? '';
+
+        const matchesSearch = !query || title.includes(query) || description.includes(query) || concepts.toLowerCase().includes(query);
+        const matchesDifficulty = difficultyValue === 'all' || cardDifficulty === difficultyValue;
+        const matchesProvider = providerValue === 'all' || cardProvider === providerValue;
+        const matchesConcept = conceptValue === 'all' || concepts.split(',').includes(conceptValue);
+        const isVisible = matchesSearch && matchesDifficulty && matchesProvider && matchesConcept;
+
+        card.classList.toggle('hidden', !isVisible);
+        if (isVisible) visibleCount += 1;
+      });
+
+      if (count) count.textContent = `${visibleCount} ${visibleCount === 1 ? 'tutorial' : 'tutorials'}`;
+      empty?.classList.toggle('hidden', visibleCount !== 0);
+    }
+
+    [search, difficulty, provider, concept].forEach((control) => control?.addEventListener('input', applyFilters));
+  </script>
+</BaseLayout>

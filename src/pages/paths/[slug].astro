@@ -1,0 +1,95 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PathHeader from '@/components/PathHeader.astro';
+import Syllabus from '@/components/Syllabus.astro';
+import { getLearningPaths, difficultyClass } from '@/lib/tutorials';
+
+export async function getStaticPaths() {
+  return (await getLearningPaths()).map((path) => ({
+    params: { slug: path.slug },
+    props: { path }
+  }));
+}
+
+const { path: learningPath } = Astro.props;
+const allTutorials = learningPath.series.flatMap((s) => s.tutorials);
+const firstTutorial = allTutorials[0];
+const totalTime = allTutorials.reduce((s, t) => s + (parseInt(t.time) || 0), 0);
+const difficulties = [...new Set(allTutorials.map((t) => t.difficulty))];
+const primaryDifficulty = difficulties.length === 1 ? difficulties[0] : `${difficulties[0]} → ${difficulties[difficulties.length - 1]}`;
+const base = import.meta.env.BASE_URL === '/' ? '' : import.meta.env.BASE_URL;
+---
+
+<BaseLayout title={`${learningPath.title} path`} description={learningPath.description}>
+  <div class="mx-auto max-w-5xl px-4 pt-12 sm:px-6 lg:px-8">
+    <PathHeader
+      eyebrow="Learning path"
+      title={learningPath.title}
+      description={learningPath.description}
+      stats={[
+        { label: 'tutorials', value: allTutorials.length },
+        { label: 'total', value: `${totalTime} min` },
+        { label: 'level', value: primaryDifficulty }
+      ]}
+      actions={[
+        ...(firstTutorial ? [{ label: 'Start journey', href: firstTutorial.url, style: 'primary' as const }] : []),
+        { label: 'Back to catalog', href: `${base}/paths`, style: 'ghost' as const }
+      ]}
+    />
+  </div>
+
+  {allTutorials.length > 0 ? (
+    <>
+      <!-- ─── The Syllabus ──────────────────────────────────────────── -->
+      <section class="mt-4">
+        <div class="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+          <Syllabus
+            tutorials={allTutorials}
+            title="Curriculum"
+            description="Master the curriculum step-by-step"
+            showDescription={true}
+          />
+        </div>
+      </section>
+
+      <!-- ─── Path Outcome ──────────────────────────────────────────── -->
+      <section class="relative py-20 overflow-hidden">
+        <div class="absolute inset-0 bg-indigo-50/50 -skew-y-3 origin-right"></div>
+        <div class="mx-auto max-w-5xl px-4 relative sm:px-6 lg:px-8">
+          <div class="glass-card p-8 md:p-12 border-indigo-200/50 shadow-2xl shadow-indigo-500/10 flex flex-col md:flex-row items-center gap-10">
+            <div class="flex-shrink-0 w-24 h-24 md:w-32 md:h-32 bg-gradient-to-br from-indigo-500 to-brand-500 rounded-3xl rotate-12 flex items-center justify-center shadow-xl shadow-indigo-500/20">
+              <span class="text-4xl md:text-5xl">🎯</span>
+            </div>
+            
+            <div class="flex-1 text-center md:text-left">
+              <p class="text-xs font-900 text-indigo-600 uppercase tracking-[0.2em] mb-4">The Result</p>
+              <h2 class="heading-lg text-gradient mb-4">What you'll achieve</h2>
+              <p class="body-lg text-ink font-600 leading-relaxed">
+                After completing the {learningPath.title} path, you will have built {allTutorials.length} production-ready projects that demonstrate {learningPath.description.toLowerCase().replace(/\.$/, '')}.
+              </p>
+              <p class="mt-4 text-muted max-w-2xl">
+                Each tutorial produces a runnable sample. By the end of this path, you'll have the practical foundation and a portfolio of agent applications to build anything you can imagine.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </>
+  ) : (
+    <section class="mx-auto max-w-5xl px-4 py-12 sm:px-6 lg:px-8">
+      <div class="solid-card p-8">
+        <p class="eyebrow">Coming soon</p>
+        <h2 class="heading-md mt-2">{learningPath.title} does not have tutorials yet</h2>
+        <p class="mt-3 max-w-2xl text-sm leading-7 text-muted">
+          Add Markdown or MDX files under <code>src/content/tutorials/{learningPath.slug}</code> to publish tutorials for this path.
+        </p>
+        <div class="mt-5 flex flex-wrap gap-3">
+          <a class="btn-primary" href={`${base}/paths/agent-essentials`}>Open first path</a>
+          {learningPath.slug === 'migration' && (
+            <a class="btn-ghost" href="https://learn.microsoft.com/en-us/agent-framework/migration-guide/from-semantic-kernel" target="_blank" rel="noreferrer">Open migration guide</a>
+          )}
+        </div>
+      </div>
+    </section>
+  )}
+</BaseLayout>

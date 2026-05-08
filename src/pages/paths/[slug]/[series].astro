@@ -1,0 +1,55 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PathHeader from '@/components/PathHeader.astro';
+import { getLearningPaths, difficultyClass } from '@/lib/tutorials';
+
+export async function getStaticPaths() {
+  return (await getLearningPaths()).flatMap((path) =>
+    path.series.map((series) => ({
+      params: { slug: path.slug, series: series.slug },
+      props: { path, series }
+    }))
+  );
+}
+
+const { path: learningPath, series } = Astro.props;
+const firstTutorial = series.tutorials[0];
+const totalTime = series.tutorials.reduce((s, t) => s + (parseInt(t.time) || 0), 0);
+---
+
+<BaseLayout title={`${series.title} tutorials`} description={series.description}>
+  <div class="mx-auto max-w-5xl px-4 pt-10 pb-14 sm:px-6 lg:px-8">
+    <PathHeader
+      eyebrow={`${learningPath.title} · Series`}
+      title={series.title}
+      description={series.description}
+      stats={[
+        { label: 'tutorials', value: series.tutorials.length },
+        { label: 'total', value: `${totalTime} min` }
+      ]}
+      actions={[
+        ...(firstTutorial ? [{ label: 'Start series', href: firstTutorial.url, style: 'primary' as const }] : []),
+        { label: `Back to ${learningPath.title}`, href: `/paths/${learningPath.slug}`, style: 'ghost' as const }
+      ]}
+    />
+
+    <div class="space-y-3">
+      {series.tutorials.map((tutorial, index) => (
+        <a class="syllabus-item group" href={tutorial.url}>
+          <span class="syllabus-number group-hover:bg-indigo-600 group-hover:text-white group-hover:border-indigo-600 transition-all duration-200">
+            {index + 1}
+          </span>
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-2">
+              <span class={`rounded-full px-2 py-0.5 text-xs font-700 ${difficultyClass(tutorial.difficulty)}`}>{tutorial.difficulty}</span>
+              <span class="text-xs font-700 text-muted">{tutorial.time}</span>
+            </div>
+            <p class="mt-1 font-700 text-ink leading-snug">{tutorial.title}</p>
+            <p class="mt-1 text-sm text-muted leading-relaxed">{tutorial.description}</p>
+          </div>
+          <svg class="size-5 shrink-0 text-muted group-hover:text-indigo-600 transition-all duration-200 group-hover:translate-x-0.5 mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M9 5l7 7-7 7"></path></svg>
+        </a>
+      ))}
+    </div>
+  </div>
+</BaseLayout>

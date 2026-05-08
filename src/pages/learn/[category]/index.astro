@@ -1,0 +1,65 @@
+---
+import BaseLayout from '@/layouts/BaseLayout.astro';
+import PathHeader from '@/components/PathHeader.astro';
+import Syllabus from '@/components/Syllabus.astro';
+import { getLearningPaths, difficultyClass } from '@/lib/tutorials';
+
+export async function getStaticPaths() {
+  return (await getLearningPaths()).map((path) => ({
+    params: { category: path.slug },
+    props: { path }
+  }));
+}
+
+const { path: learningPath } = Astro.props;
+const allTutorials = learningPath.series.flatMap((s) => s.tutorials);
+const firstTutorial = allTutorials[0];
+const totalTime = allTutorials.reduce((s, t) => s + (parseInt(t.time) || 0), 0);
+const base = import.meta.env.BASE_URL === '/' ? '' : import.meta.env.BASE_URL;
+---
+
+<BaseLayout title={`${learningPath.title} tutorials`} description={learningPath.description}>
+  <div class="mx-auto max-w-5xl px-4 pt-10 pb-14 sm:px-6 lg:px-8">
+    <PathHeader
+      eyebrow="Learning path"
+      title={learningPath.title}
+      description={learningPath.description}
+      stats={[
+        { label: 'tutorials', value: allTutorials.length },
+        ...(totalTime > 0 ? [{ label: 'total', value: `${totalTime} min` }] : [])
+      ]}
+      actions={[
+        ...(firstTutorial ? [{ label: 'Start first tutorial', href: firstTutorial.url, style: 'primary' as const }] : []),
+        { label: 'All paths', href: `${base}/paths`, style: 'ghost' as const }
+      ]}
+    />
+
+    {allTutorials.length > 0 ? (
+      <>
+        {learningPath.series.map((series) => (
+          <Syllabus
+            tutorials={series.tutorials}
+            title="Syllabus"
+            description={series.title}
+            bodyText={series.description}
+            showDescription={false}
+          />
+        ))}
+      </>
+    ) : (
+      <div class="solid-card p-8">
+        <p class="eyebrow">{learningPath.plannedCount > 0 ? 'Reference track' : 'Guidance track'}</p>
+        <h2 class="heading-md mt-2">{learningPath.title} does not have authored tutorials yet</h2>
+        <p class="mt-3 max-w-2xl text-sm leading-7 text-muted">
+          Add Markdown or MDX files under <code>src/content/tutorials/{learningPath.slug}</code> to publish tutorials for this path.
+        </p>
+        <div class="mt-5 flex flex-wrap gap-3">
+          <a class="btn-primary" href={`${base}/learn/agent-essentials`}>Open authored track</a>
+          {learningPath.slug === 'migration' && (
+            <a class="btn-ghost" href="https://learn.microsoft.com/en-us/agent-framework/migration-guide/from-semantic-kernel" target="_blank" rel="noreferrer">Open migration guide</a>
+          )}
+        </div>
+      </div>
+    )}
+  </div>
+</BaseLayout>

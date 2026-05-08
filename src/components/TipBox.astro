@@ -1,0 +1,27 @@
+---
+interface Props {
+  type?: 'tip' | 'warning' | 'note' | 'check';
+  title?: string;
+}
+
+const { type = 'tip', title } = Astro.props;
+const styles = {
+  tip: 'border-teal-600 bg-teal-50 text-teal-900',
+  warning: 'border-amber-500 bg-amber-50 text-amber-900',
+  note: 'border-slate-400 bg-slate-50 text-slate-800',
+  check: 'border-emerald-500 bg-emerald-50 text-emerald-800'
+};
+const labels = {
+  tip: 'Tip',
+  warning: 'Warning',
+  note: 'Note',
+  check: 'Check'
+};
+---
+
+<aside class={`my-5 rounded-r-lg border-l-4 p-4 ${styles[type]}`}>
+  <p class="mb-1 font-black">{title ?? labels[type]}</p>
+  <div class="text-sm leading-6">
+    <slot />
+  </div>
+</aside>

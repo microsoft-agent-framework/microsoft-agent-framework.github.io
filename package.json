@@ -1,0 +1,23 @@
+{
+  "name": "agent-academy",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "@astrojs/check": "latest",
+    "@astrojs/mdx": "^5.0.4",
+    "@fontsource/inter": "latest",
+    "@tailwindcss/postcss": "^4.2.4",
+    "astro": "latest",
+    "mermaid": "^11.14.0",
+    "shiki": "latest",
+    "tailwindcss": "latest",
+    "typescript": "latest"
+  }
+}

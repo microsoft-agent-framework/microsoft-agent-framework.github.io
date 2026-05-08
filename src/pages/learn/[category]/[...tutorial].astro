@@ -1,0 +1,33 @@
+---
+import TutorialLayout from '@/layouts/TutorialLayout.astro';
+import { getLearningPaths, getTutorials } from '@/lib/tutorials';
+
+export async function getStaticPaths() {
+  const tutorials = await getTutorials();
+  const paths = await getLearningPaths();
+
+  return tutorials.map((tutorial) => {
+    const series = paths
+      .find((path) => path.slug === tutorial.categorySlug)
+      ?.series.find((candidate) => candidate.slug === tutorial.seriesSlug);
+    const seriesTutorials = series?.tutorials ?? [tutorial];
+
+    return {
+      params: {
+        category: tutorial.categorySlug,
+        tutorial: tutorial.slug
+      },
+      props: {
+        tutorial,
+        seriesTutorials,
+        previous: seriesTutorials.find((candidate) => candidate.seriesOrder === tutorial.seriesOrder - 1),
+        next: seriesTutorials.find((candidate) => candidate.seriesOrder === tutorial.seriesOrder + 1)
+      }
+    };
+  });
+}
+
+const { tutorial, seriesTutorials, previous, next } = Astro.props;
+---
+
+<TutorialLayout tutorial={tutorial} seriesTutorials={seriesTutorials} previous={previous} next={next} />

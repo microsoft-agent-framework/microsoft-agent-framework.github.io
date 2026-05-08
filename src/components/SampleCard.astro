@@ -1,0 +1,109 @@
+---
+import { difficultyClass, pathClass } from '@/lib/tutorials';
+import type { Tutorial } from '@/lib/tutorials';
+
+interface Props {
+  tutorial: Tutorial;
+}
+
+const { tutorial } = Astro.props;
+---
+
+<article
+  class="solid-card group flex h-full flex-col overflow-hidden bg-white/50 backdrop-blur-sm"
+  data-tutorial-card
+  data-tutorial-id={tutorial.id}
+  data-category={tutorial.categorySlug}
+  data-series={tutorial.seriesSlug}
+  data-provider={tutorial.provider}
+  data-difficulty={tutorial.difficulty}
+  data-concepts={tutorial.concepts.join(',')}
+  data-title={tutorial.title.toLowerCase()}
+  data-description={tutorial.description.toLowerCase()}
+>
+  <div class="flex flex-1 flex-col p-8">
+    <div class="flex items-center justify-between gap-2 mb-6">
+      <div class="flex items-center gap-2 min-w-0 flex-1">
+        <span class={`whitespace-nowrap shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-900 uppercase tracking-widest ${difficultyClass(tutorial.difficulty)}`}>{tutorial.difficulty}</span>
+        <span class={`truncate rounded-full px-2.5 py-0.5 text-[10px] font-900 uppercase tracking-widest ${pathClass(tutorial.categorySlug)}`} title={tutorial.category}>
+          {tutorial.category}
+        </span>
+      </div>
+      
+      <div class="flex items-center gap-1.5 shrink-0">
+        <div class="completion-badge hidden items-center gap-1.5 px-2.5 py-1 rounded-full bg-teal-600 text-white text-[10px] font-900 uppercase tracking-widest shadow-lg shadow-teal-600/20">
+          <svg class="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4">
+            <path d="M5 13l4 4L19 7" />
+          </svg>
+          Done
+        </div>
+        <span class="time-indicator text-[10px] font-800 uppercase tracking-widest text-muted/60 flex items-center gap-1.5">
+          <svg class="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+            <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          {tutorial.time}
+        </span>
+      </div>
+    </div>
+
+    {tutorial.category !== tutorial.series && (
+      <p class="mb-1 text-[10px] font-800 uppercase tracking-widest text-indigo-500/70">Series: {tutorial.series}</p>
+    )}
+    
+    <h3 class="text-2xl font-900 leading-tight text-ink group-hover:text-indigo-600 transition-colors duration-200">{tutorial.title}</h3>
+    <p class="mt-4 flex-1 text-sm leading-relaxed text-slate-500 line-clamp-3">{tutorial.description}</p>
+
+    <div class="mt-8 flex items-center justify-between text-[10px] font-800 uppercase tracking-widest text-muted/50">
+      <span class="flex items-center gap-2">
+        <span class="size-1.5 rounded-full bg-indigo-400/40"></span>
+        {tutorial.provider}
+      </span>
+      <span>{tutorial.hosting}</span>
+    </div>
+  </div>
+
+  <a
+    class="flex items-center justify-between border-t border-border/10 px-8 py-5 text-sm font-800 text-indigo-600/60 transition-all duration-300 hover:text-indigo-600 group-hover:bg-indigo-50/20"
+    href={tutorial.url}
+    aria-label={`Start ${tutorial.title}`}
+    data-tutorial-link={tutorial.id}
+  >
+    <span class="btn-label text-indigo-600/80">Start lesson</span>
+    <svg class="size-5 text-indigo-600/40 transition-all duration-300 group-hover:translate-x-1 group-hover:text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M13 7l5 5m0 0l-5 5m5-5H6"></path></svg>
+  </a>
+</article>
+
+<script>
+  import { isCompleted } from '@/lib/progress';
+
+  function updateCardProgress() {
+    document.querySelectorAll('[data-tutorial-card]').forEach((card) => {
+      const tutorialId = card.getAttribute('data-tutorial-id');
+      if (!tutorialId) return;
+
+      const done = isCompleted(tutorialId);
+      const badge = card.querySelector('.completion-badge');
+      const time = card.querySelector('.time-indicator');
+      const link = card.querySelector('[data-tutorial-link]');
+      const label = link?.querySelector('.btn-label');
+
+      if (done) {
+        badge?.classList.remove('hidden');
+        badge?.classList.add('flex');
+        time?.classList.add('hidden');
+        if (label) label.textContent = 'Review tutorial';
+      } else {
+        badge?.classList.add('hidden');
+        badge?.classList.remove('flex');
+        time?.classList.remove('hidden');
+        if (label) label.textContent = 'Start tutorial';
+      }
+    });
+  }
+
+  // Initial load
+  updateCardProgress();
+
+  // Listen for updates
+  window.addEventListener('progress-update', updateCardProgress);
+</script>

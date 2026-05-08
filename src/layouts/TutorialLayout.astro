@@ -1,0 +1,473 @@
+---
+import ProgressBar from '@/components/ProgressBar.astro';
+import Sidebar from '@/components/Sidebar.astro';
+import BaseLayout from './BaseLayout.astro';
+import { difficultyClass } from '@/lib/tutorials';
+import type { Tutorial } from '@/lib/tutorials';
+
+interface Props {
+  tutorial: Tutorial;
+  seriesTutorials: Tutorial[];
+  previous?: Tutorial;
+  next?: Tutorial;
+}
+
+const { tutorial, seriesTutorials, previous, next } = Astro.props;
+const Content = tutorial.Content;
+const isPathView = seriesTutorials.length > 1;
+const currentIndex = seriesTutorials.findIndex((t) => t.url === tutorial.url);
+const base = import.meta.env.BASE_URL === '/' ? '' : import.meta.env.BASE_URL;
+
+const generatedHeadings = [
+  { slug: 'overview', text: 'Overview', depth: 2 },
+  { slug: 'what-you-will-build', text: 'What you will build', depth: 2 },
+  { slug: 'step-by-step-walkthrough', text: 'Step-by-step walkthrough', depth: 2 },
+  { slug: 'concepts-covered', text: 'Concepts covered', depth: 2 },
+  { slug: 'prerequisites', text: 'Prerequisites', depth: 2 },
+  { slug: 'environment-variables', text: 'Environment variables', depth: 2 },
+  { slug: 'run-commands', text: 'Run commands', depth: 2 },
+  { slug: 'expected-output', text: 'Expected output', depth: 2 },
+  { slug: 'troubleshooting', text: 'Troubleshooting', depth: 2 },
+  { slug: 'next-tutorial', text: 'Next tutorial', depth: 2 },
+  { slug: 'source-sample-link', text: 'Source sample link', depth: 2 }
+];
+const metadataHeadings = Content ? [] : [
+  { slug: 'concepts-covered', text: 'Concepts covered', depth: 2 },
+  { slug: 'prerequisites', text: 'Prerequisites', depth: 2 },
+  { slug: 'environment-variables', text: 'Environment variables', depth: 2 },
+  { slug: 'run-commands', text: 'Run commands', depth: 2 },
+  { slug: 'expected-output', text: 'Expected output', depth: 2 },
+  ...(tutorial.troubleshooting.length > 0 ? [{ slug: 'troubleshooting', text: 'Troubleshooting', depth: 2 }] : []),
+  { slug: 'next-tutorial', text: 'Next tutorial', depth: 2 },
+  ...(tutorial.sourceUrl ? [{ slug: 'source-sample-link', text: 'Source sample link', depth: 2 }] : [])
+];
+const authoredHeadings = tutorial.headings.map((heading) => ({ 
+  slug: heading.slug, 
+  text: heading.text, 
+  depth: heading.depth 
+}));
+const headings = dedupeHeadings(Content ? [...authoredHeadings, ...metadataHeadings] : generatedHeadings);
+
+function dedupeHeadings(items: Array<{ slug: string; text: string; depth: number }>) {
+  const seen = new Set<string>();
+  return items.filter((item) => {
+    if (seen.has(item.slug)) return false;
+    seen.add(item.slug);
+    return true;
+  });
+}
+---
+
+<BaseLayout title={tutorial.title} description={tutorial.description} showFooter={false}>
+  <ProgressBar />
+
+  <div class="mx-auto max-w-7xl px-4 pt-8 pb-12 sm:px-6 lg:px-8">
+
+
+    <!-- ─── Content + Sidebar ───────────────────────────────────── -->
+    <div class="flex gap-8">
+      <Sidebar
+        tutorials={seriesTutorials}
+        currentUrl={tutorial.url}
+        headings={headings}
+      />
+
+      <article class={`min-w-0 flex-1 relative path-theme-${tutorial.categorySlug}`}>
+        <!-- Floating Expand Button (Sticky) -->
+        <div class="sticky top-14 h-0 z-40">
+          <button id="floating-sidebar-expand" class="hidden md:flex absolute -left-12 top-0 items-center justify-center size-8 rounded-full border border-border bg-white text-muted hover:text-ink hover:border-indigo-500 shadow-sm transition-all" title="Expand Sidebar">
+            <svg class="size-4 ml-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
+            </svg>
+          </button>
+        </div>
+
+        <!-- ─── Article Header ──────────────────────────────────────── -->
+        <div class="mb-8 animate-fade-in">
+          <!-- Breadcrumb -->
+          <nav class="flex flex-wrap items-center gap-2 text-[10px] font-900 uppercase tracking-widest text-muted/60 mb-6" aria-label="Breadcrumb">
+            <a class="transition-colors duration-150 hover:text-indigo-600" href={`${base}/`}>Home</a>
+            <span class="text-black">/</span>
+            <a class="transition-colors duration-150 hover:text-indigo-600" href={`${base}/paths/${tutorial.categorySlug}`}>{tutorial.category}</a>
+            <span class="text-black">/</span>
+            <span class="text-indigo-600/80">{tutorial.title}</span>
+          </nav>
+
+
+          <div class="flex flex-wrap items-center justify-between gap-6 mb-6">
+            <h1 class="text-3xl sm:text-4xl font-900 text-gradient m-0 flex items-center flex-wrap gap-x-4 py-1">
+              {tutorial.title}
+              <span id="completion-badge" class="hidden items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-900 uppercase tracking-widest shadow-lg shadow-emerald-500/20 animate-in fade-in zoom-in duration-500">
+                <svg class="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4"><path d="M5 13l4 4L19 7"/></svg>
+                Done
+              </span>
+            </h1>
+            {tutorial.sourceUrl && (
+              <a class="btn-ghost shrink-0" href={tutorial.sourceUrl} target="_blank" rel="noreferrer">
+                <svg class="size-4 opacity-70" fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" clip-rule="evenodd" />
+                </svg>
+                View source
+              </a>
+            )}
+          </div>
+
+          <!-- Description / Lead -->
+          <div class="mb-10 pl-6 border-l-4 border-indigo-500/20">
+            <p class="text-xl text-slate-600 leading-relaxed font-500">
+              {tutorial.description}
+            </p>
+          </div>
+
+          <!-- ─── Inline Path Strip ──────────────────────────────────── -->
+          {isPathView && (
+            <div class="path-strip mb-6">
+              <div class="path-strip-header">
+                <span class="eyebrow" style="font-size:0.68rem">Part of</span>
+                <a class="path-strip-title" href={`${base}/paths/${tutorial.categorySlug}`}>
+                  {tutorial.category}
+                  <svg class="size-3 inline-block ml-0.5 opacity-60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M9 5l7 7-7 7"/></svg>
+                </a>
+              </div>
+              <ol class="path-strip-modules" aria-label="Path modules" data-current-index={currentIndex}>
+                {seriesTutorials.map((t, i) => {
+                  const isCurrent = t.url === tutorial.url;
+                  // We no longer assume previous modules are done (isDone = i < currentIndex)
+                  // The client-side script will update this based on real localStorage data.
+                  return (
+                    <li>
+                      <a
+                        href={t.url}
+                        title={t.title}
+                        aria-current={isCurrent ? 'step' : undefined}
+                        class={`path-module-step ${
+                          isCurrent ? 'path-module-step--current' : 'path-module-step--upcoming'
+                        }`}
+                        data-index={i}
+                        data-id={t.id}
+                      >
+                        <span class="path-module-step-num" data-index={i + 1}>{i + 1}</span>
+                        <span class="path-module-step-label">{t.title}</span>
+                      </a>
+                    </li>
+                  );
+                })}
+              </ol>
+            </div>
+          )}
+
+          <!-- ─── Skipped Modules Banner ────────────────────────────── -->
+          <div id="skipped-modules-banner" class="skipped-banner">
+            <div class="skipped-banner-inner">
+              <div class="shrink-0 size-10 rounded-full bg-amber-100 flex items-center justify-center text-amber-600">
+                <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+              </div>
+              <div class="flex-1">
+                <p class="text-sm font-800 text-amber-900 leading-tight">Foundational modules skipped</p>
+                <p class="mt-1 text-sm text-amber-800/80 leading-relaxed font-500">
+                  You've skipped some modules in this path. For a better understanding of the concepts used here, we recommend following the sequence.
+                </p>
+                <a id="first-skipped-link" href="#" class="mt-2.5 inline-flex items-center text-xs font-800 text-amber-700 hover:text-amber-900 underline underline-offset-4 decoration-2 decoration-amber-300/60 transition-colors">
+                  Go to first skipped module
+                  <svg class="size-3 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+                </a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Main tutorial content -->
+        <div class="tutorial-content solid-card p-6 sm:p-8">
+          
+          <!-- Prerequisites Section (Only for generated samples) -->
+          {!Content && tutorial.prerequisites.length > 0 && (
+            <section class="mb-10 animate-fade-in animate-delay-1 border-b border-slate-100 pb-8" aria-labelledby="prereq-heading">
+              <h2 id="prereq-heading" class="!mt-0 !border-t-0 !pt-0 mb-4 flex items-center gap-3">
+                What you'll need
+              </h2>
+              <ul class="space-y-3.5 list-none p-0 m-0">
+                {tutorial.prerequisites.map((item) => (
+                  <li class="flex items-start gap-3 text-slate-600 font-500">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="size-5 text-indigo-500 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    <span class="leading-relaxed">{item}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+
+          {Content ? (
+            <Content />
+          ) : (
+            <>
+              <section id="overview">
+                <h2>Overview</h2>
+                <p>
+                  This guided tutorial walks through <code>{tutorial.samplePath}</code>. You will inspect the source, configure the required services, run the sample, and compare the expected behavior with the terminal output.
+                </p>
+              </section>
+
+              <section id="what-you-will-build">
+                <h2>What you will build</h2>
+                <p>
+                  You will run <strong>{tutorial.title}</strong>, a {tutorial.hosting.toLowerCase()} sample in the {tutorial.category.toLowerCase()} path. The finished result demonstrates {tutorial.concepts.slice(0, 3).join(', ').toLowerCase()} from the source folder.
+                </p>
+                {tutorial.companionProjects.length > 1 && (
+                  <p>
+                    This scenario includes multiple runnable projects. Start the companion processes shown in the run commands so the client, server, host, or web project can communicate correctly.
+                  </p>
+                )}
+              </section>
+
+              <section id="step-by-step-walkthrough">
+                <h2>Step-by-step walkthrough</h2>
+                <ol>
+                  <li>Open the source folder and scan the main source files to understand the sample structure.</li>
+                  <li>Review <code>Program.cs</code> or the function entry point to find the agent, workflow, tool, or host setup.</li>
+                  <li>Set the environment variables listed above in the same terminal session that will run the sample.</li>
+                  <li>Restore dependencies and run the command sequence for this sample.</li>
+                  <li>Compare the terminal, HTTP, or hosted app behavior with the expected output below.</li>
+                  <li>Make one small change, such as the prompt, instructions, tool input, or workflow branch, then rerun the sample.</li>
+                </ol>
+              </section>
+
+              <section id="concepts-covered">
+                <h2>Concepts covered</h2>
+                <ul>
+                  {tutorial.concepts.map((concept) => <li>{concept}</li>)}
+                  <li>{tutorial.provider} configuration</li>
+                  <li>{tutorial.hosting} execution</li>
+                </ul>
+              </section>
+
+              <section id="environment-variables">
+                <h2>Environment variables</h2>
+                {tutorial.envVars.length > 0 ? (
+                  <div class="overflow-x-auto">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Purpose</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {tutorial.envVars.map((envVar) => (
+                          <tr>
+                            <td><code>{envVar}</code></td>
+                            <td>Configure this value before running the sample locally.</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <p>No environment variables were detected in the sample source. If your provider setup requires credentials, configure them using your normal local development workflow.</p>
+                )}
+              </section>
+
+              <section id="run-commands">
+                <h2>Run commands</h2>
+                {tutorial.runCommands.length > 0 ? (
+                  <pre><code class="language-bash">{tutorial.runCommands.join('\n\n')}</code></pre>
+                ) : (
+                  <p>This authored tutorial does not include runnable commands.</p>
+                )}
+              </section>
+
+              <section id="expected-output">
+                <h2>Expected output</h2>
+                {tutorial.expectedOutput.length > 0 ? (
+                  <ul>
+                    {tutorial.expectedOutput.map((item) => <li>{item}</li>)}
+                  </ul>
+                ) : (
+                  <p>No expected output was specified for this tutorial.</p>
+                )}
+              </section>
+
+              {tutorial.troubleshooting.length > 0 && (
+                <section id="troubleshooting">
+                  <h2>Troubleshooting</h2>
+                  {tutorial.troubleshooting.map((item) => (
+                    <div class="solid-callout solid-callout-warning mb-3">
+                      <p class="text-sm text-amber-900/80">{item}</p>
+                    </div>
+                  ))}
+                </section>
+              )}
+
+              <section id="next-tutorial">
+                <h2>Next tutorial</h2>
+                {next ? (
+                  <p>Continue with <a href={next.url}>{next.title}</a>.</p>
+                ) : (
+                  <p>This is the final module in this path. Return to <a href={`${base}/paths/${tutorial.categorySlug}`}>{tutorial.category}</a> or browse another learning path.</p>
+                )}
+              </section>
+
+              {tutorial.sourceUrl && (
+                <section id="source-sample-link">
+                  <h2>Source sample link</h2>
+                  <p>
+                    Open the matching source sample at <a href={tutorial.sourceUrl} target="_blank" rel="noreferrer">{tutorial.samplePath ?? tutorial.sourceUrl}</a>.
+                  </p>
+                </section>
+              )}
+            </>
+          )}
+        </div>
+
+
+        <div class="mt-12 border-t border-border/60"></div>
+
+        <nav class="mt-12 grid gap-6 sm:grid-cols-2" aria-label="Previous and next tutorials">
+          {previous ? (
+            <a class="solid-card p-6 group bg-white/50 backdrop-blur-sm" href={previous.url}>
+              <span class="text-[10px] font-900 uppercase tracking-[0.2em] text-muted/60 mb-2 block">← Previous</span>
+              <span class="text-lg font-900 text-ink group-hover:text-indigo-600 transition-colors duration-200">{previous.title}</span>
+            </a>
+          ) : <span></span>}
+          {next ? (
+            <a id="next-module-link" class="solid-card p-6 text-right group bg-white/50 backdrop-blur-sm" href={next.url} data-current-id={tutorial.id}>
+              <span class="text-[10px] font-900 uppercase tracking-[0.2em] text-muted/60 mb-2 block">Next →</span>
+              <span class="text-lg font-900 text-ink group-hover:text-indigo-600 transition-colors duration-200">{next.title}</span>
+            </a>
+          ) : (
+            <a id="finish-path-link" class="solid-card p-6 text-right group bg-white/50 backdrop-blur-sm" href={`${base}/paths/${tutorial.categorySlug}`} data-current-id={tutorial.id}>
+              <span class="text-[10px] font-900 uppercase tracking-[0.2em] text-indigo-600/60 mb-2 block">Complete →</span>
+              <span class="text-lg font-900 text-ink group-hover:text-indigo-600 transition-colors duration-200">Return to {tutorial.category}</span>
+            </a>
+          )}
+        </nav>
+      </article>
+    </div>
+  </div>
+
+  <script>
+    import { isCompleted, toggleCompleted, getCompletedTutorials, setCompleted } from '@/lib/progress';
+
+    const sidebarOpen = document.querySelector('#sidebar-open');
+    const tutorialSidebar = document.querySelector('#tutorial-sidebar');
+    const desktopCollapse = document.querySelector('#desktop-sidebar-collapse');
+    const floatingExpand = document.querySelector('#floating-sidebar-expand');
+    const completionBadge = document.querySelector('#completion-badge');
+    const currentTutorialId = '{tutorial.id}';
+
+    // Mobile open toggle (from Navbar)
+    sidebarOpen?.addEventListener('click', () => {
+      tutorialSidebar?.classList.remove('hidden');
+    });
+
+    // Desktop hide (from inside Sidebar)
+    desktopCollapse?.addEventListener('click', () => {
+      tutorialSidebar?.classList.remove('md:block');
+      tutorialSidebar?.classList.add('md:hidden');
+      
+      floatingExpand?.classList.remove('hidden');
+      floatingExpand?.classList.add('md:flex');
+    });
+
+    // Desktop show (from Floating Button)
+    floatingExpand?.addEventListener('click', () => {
+      tutorialSidebar?.classList.remove('md:hidden');
+      tutorialSidebar?.classList.add('md:block');
+      
+      floatingExpand?.classList.remove('md:flex');
+      floatingExpand?.classList.add('hidden');
+    });
+
+    // Progress Tracking Logic
+    function updateCompletionUI() {
+      console.log('[Progress] updateCompletionUI triggered');
+      
+      const done = isCompleted(currentTutorialId);
+      
+      if (done) {
+        completionBadge?.classList.remove('hidden');
+        completionBadge?.classList.add('flex');
+      } else {
+        completionBadge?.classList.remove('flex');
+        completionBadge?.classList.add('hidden');
+      }
+
+      // Update Path Strip & Banner
+      const completedIds = getCompletedTutorials();
+      const stripModules = document.querySelector('.path-strip-modules');
+      const currentPageIndex = parseInt(stripModules?.getAttribute('data-current-index') || '0');
+      const skippedBanner = document.querySelector('#skipped-modules-banner');
+      const firstSkippedLink = document.querySelector('#first-skipped-link') as HTMLAnchorElement;
+      
+      let firstSkippedUrl = '';
+
+      document.querySelectorAll('.path-module-step').forEach((step) => {
+        const stepUrl = (step as HTMLAnchorElement).pathname;
+        const stepIndex = parseInt((step as HTMLElement).dataset.index || '0');
+        const stepId = (step as HTMLElement).dataset.id || '';
+        
+        const isStepDone = completedIds.includes(stepId);
+
+        const numSpan = step.querySelector('.path-module-step-num') as HTMLElement;
+        const isCurrent = step.classList.contains('path-module-step--current');
+
+        if (isStepDone) {
+          step.classList.add('path-module-step--done');
+          step.classList.remove('path-module-step--skipped', 'path-module-step--upcoming');
+          if (numSpan && !numSpan.querySelector('svg')) {
+             numSpan.innerHTML = '<svg class="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3"><path d="M5 13l4 4L19 7"/></svg>';
+          }
+        } else if (!isCurrent && stepIndex < currentPageIndex) {
+          // Skipped state
+          step.classList.add('path-module-step--skipped');
+          step.classList.remove('path-module-step--done', 'path-module-step--upcoming');
+          if (numSpan && numSpan.querySelector('svg')) {
+             numSpan.innerHTML = numSpan.dataset.index || '';
+          }
+          if (!firstSkippedUrl) firstSkippedUrl = stepUrl;
+        } else if (!isCurrent) {
+          // Upcoming state
+          step.classList.add('path-module-step--upcoming');
+          step.classList.remove('path-module-step--done', 'path-module-step--skipped');
+          if (numSpan && numSpan.querySelector('svg')) {
+             numSpan.innerHTML = numSpan.dataset.index || '';
+          }
+        }
+      });
+
+      // Show/Hide Banner
+      if (firstSkippedUrl) {
+        console.log('[Progress] Showing Banner. Link:', firstSkippedUrl);
+        skippedBanner?.classList.add('show');
+        if (firstSkippedLink) firstSkippedLink.href = firstSkippedUrl;
+      } else {
+        console.log('[Progress] Hiding Banner. No skipped modules.');
+        skippedBanner?.classList.remove('show');
+      }
+    }
+
+    // Auto-complete on Next/Finish click
+    const handleAutoNavigation = (id: string) => {
+      if (id) {
+        setCompleted(id, true);
+      }
+    };
+
+    const nextModuleLink = document.querySelector('#next-module-link');
+    const finishPathLink = document.querySelector('#finish-path-link');
+
+    nextModuleLink?.addEventListener('click', () => {
+      handleAutoNavigation((nextModuleLink as HTMLElement).dataset.currentId || '');
+    });
+
+    finishPathLink?.addEventListener('click', () => {
+      handleAutoNavigation((finishPathLink as HTMLElement).dataset.currentId || '');
+    });
+
+    // Initial load
+    updateCompletionUI();
+
+    // Listen for updates from other components
+    window.addEventListener('progress-update', updateCompletionUI);
+  </script>
+</BaseLayout>

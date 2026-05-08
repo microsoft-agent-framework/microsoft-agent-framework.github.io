@@ -1,0 +1,100 @@
+---
+import { difficultyClass } from '@/lib/tutorials';
+import type { Tutorial } from '@/lib/tutorials';
+
+interface Props {
+  tutorials: Tutorial[];
+  title?: string;
+  description?: string;
+  bodyText?: string;
+  showDescription?: boolean;
+}
+
+const { tutorials, title = "Syllabus", description, bodyText, showDescription = true } = Astro.props;
+---
+
+<div class="mt-12">
+  <div class="flex items-center justify-between mb-8">
+    <div>
+      {title && <p class="eyebrow">{title}</p>}
+      {description && <h2 class="heading-md mt-2 text-gradient">{description}</h2>}
+    </div>
+    {bodyText && <p class="body-sm max-w-md text-right hidden md:block">{bodyText}</p>}
+  </div>
+
+  <div class="relative space-y-6">
+    <!-- Connecting Roadmap Line -->
+    <div class="absolute left-[1.25rem] top-8 bottom-8 w-0.5 bg-gradient-to-b from-indigo-100 via-indigo-200 to-indigo-100 hidden sm:block"></div>
+
+    {tutorials.map((tutorial, index) => (
+      <a class="syllabus-item group relative glass-card hover:bg-white transition-all duration-300" href={tutorial.url}>
+        <div class="relative z-10 flex items-start gap-5 w-full">
+          <span class="syllabus-number flex-shrink-0 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300">
+            {index + 1}
+          </span>
+          
+          <div class="flex-1 min-w-0 py-0.5">
+            <div class="flex items-center gap-3 mb-2">
+              <span class={`rounded-full px-2.5 py-0.5 text-[10px] font-900 uppercase tracking-widest ${difficultyClass(tutorial.difficulty)}`}>
+                {tutorial.difficulty}
+              </span>
+              <span class="flex items-center gap-1.5 text-xs font-700 text-muted">
+                <svg class="size-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {tutorial.time}
+              </span>
+            </div>
+            
+            <h3 class="text-lg font-900 text-ink group-hover:text-indigo-600 transition-colors duration-200">
+              {tutorial.title}
+            </h3>
+            
+            {showDescription && (
+              <p class="mt-2 text-sm text-muted leading-relaxed max-w-2xl group-hover:text-ink/70 transition-colors duration-200">
+                {tutorial.description}
+              </p>
+            )}
+          </div>
+
+          <div class="flex items-center gap-4 ml-4">
+            <div class="completion-indicator shrink-0" data-tutorial-id={tutorial.id}>
+              <div class="completion-check">
+                <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3.5">
+                  <path d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+            
+            <div class="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all duration-300 hidden sm:block">
+              <svg class="size-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </a>
+    ))}
+  </div>
+</div>
+
+<script>
+  import { isCompleted } from '@/lib/progress';
+
+  function updateSyllabusProgress() {
+    document.querySelectorAll('.completion-indicator').forEach((indicator) => {
+      const tutorialId = (indicator as HTMLElement).dataset.tutorialId;
+      if (tutorialId && isCompleted(tutorialId)) {
+        indicator.querySelector('.completion-check')?.classList.add('completion-check--done');
+      } else {
+        indicator.querySelector('.completion-check')?.classList.remove('completion-check--done');
+      }
+    });
+  }
+
+  // Run on mount
+  updateSyllabusProgress();
+
+  // Listen for updates
+  window.addEventListener('progress-update', updateSyllabusProgress);
+</script>

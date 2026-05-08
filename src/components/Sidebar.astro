@@ -1,0 +1,147 @@
+---
+import type { Tutorial } from '@/lib/tutorials';
+
+interface Heading {
+  slug: string;
+  text: string;
+  depth: number;
+}
+
+interface Props {
+  tutorials: Tutorial[];
+  currentUrl: string;
+  headings: Heading[];
+}
+
+const { tutorials, currentUrl, headings } = Astro.props;
+const currentIndex = tutorials.findIndex((t) => t.url === currentUrl);
+const isPathView = tutorials.length > 1;
+---
+
+<aside
+  id="tutorial-sidebar"
+  class="fixed inset-y-0 left-0 z-50 hidden w-80 overflow-y-auto border-r border-border bg-white px-5 py-6 md:sticky md:top-16 md:z-auto md:hidden md:h-[calc(100vh-4rem)] md:w-72 md:shrink-0 md:rounded-xl md:border md:border-border md:bg-white"
+>
+  <!-- Mobile close -->
+  <div class="mb-5 flex items-center justify-between md:hidden">
+    <p class="font-800 text-ink">Navigation</p>
+    <button
+      id="sidebar-close"
+      class="grid size-9 place-items-center rounded-lg border border-border text-muted transition-colors hover:border-indigo-500 hover:text-indigo-600"
+      type="button"
+      aria-label="Close navigation"
+    >
+      <svg class="size-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path d="M6 18L18 6M6 6l12 12"></path></svg>
+    </button>
+  </div>
+
+  <!-- Table of Contents -->
+  <div class="mb-10">
+    <div class="flex items-center justify-between mb-2 px-2">
+      <p class="eyebrow m-0">Table of contents</p>
+      <button id="desktop-sidebar-collapse" class="hidden md:flex items-center justify-center size-6 rounded border border-transparent text-muted hover:text-ink hover:border-border hover:bg-surface transition-colors" title="Collapse Sidebar">
+        <svg class="size-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+      </button>
+    </div>
+    <nav class="space-y-0.5" aria-label="Page sections">
+      {headings.map((heading) => (
+        <a
+          href={`#${heading.slug}`}
+          data-sidebar-heading={heading.slug}
+          class:list={[
+            "block rounded-lg py-2 px-2.5 text-sm font-600 text-muted transition-all duration-200 hover:bg-surface hover:text-ink",
+            heading.depth === 3 && "pl-6 text-xs font-500 opacity-80"
+          ]}
+        >
+          {heading.text}
+        </a>
+      ))}
+    </nav>
+  </div>
+
+  <!-- Path Modules -->
+  {isPathView && (
+    <div class="border-t border-border pt-8">
+      <p class="eyebrow px-2 mb-3">Path Modules</p>
+      <nav class="space-y-1" aria-label="Tutorial modules">
+        {tutorials.map((t, i) => {
+          const isCurrent = t.url === currentUrl;
+          return (
+            <a
+              href={t.url}
+              class:list={[
+                "flex items-center gap-3 rounded-lg py-2.5 px-2.5 text-sm font-700 transition-all duration-200",
+                isCurrent ? "bg-indigo-50 text-indigo-700" : "text-muted hover:bg-surface hover:text-ink"
+              ]}
+              data-sidebar-module={t.id}
+            >
+              <div class="sidebar-completion shrink-0" data-module-id={t.id}>
+                <div class="completion-check size-4.5">
+                   <span class="text-[10px] font-900 module-num">{i + 1}</span>
+                </div>
+              </div>
+              <span class="truncate">{t.title}</span>
+            </a>
+          );
+        })}
+      </nav>
+    </div>
+  )}
+</aside>
+
+<script>
+  import { isCompleted } from '@/lib/progress';
+
+  const sidebar = document.querySelector('#tutorial-sidebar');
+  const sidebarClose = document.querySelector('#sidebar-close');
+
+  function updateSidebarProgress() {
+    document.querySelectorAll('.sidebar-completion').forEach((indicator) => {
+      const moduleId = (indicator as HTMLElement).dataset.moduleId;
+      if (moduleId && isCompleted(moduleId)) {
+        const check = indicator.querySelector('.completion-check');
+        check?.classList.add('completion-check--done');
+        const num = check?.querySelector('.module-num');
+        if (num) num.innerHTML = '<svg class="size-2.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="4"><path d="M5 13l4 4L19 7"/></svg>';
+      }
+    });
+  }
+
+  // Run on mount
+  updateSidebarProgress();
+  window.addEventListener('progress-update', updateSidebarProgress);
+
+  function closeSidebar() {
+    sidebar?.classList.add('hidden');
+  }
+
+  sidebarClose?.addEventListener('click', closeSidebar);
+  sidebar?.querySelectorAll('a').forEach((link) => link.addEventListener('click', closeSidebar));
+
+  const links = Array.from(document.querySelectorAll('[data-sidebar-heading]'));
+  const sections = links
+    .map((link) => document.getElementById(link.getAttribute('data-sidebar-heading') ?? ''))
+    .filter(Boolean);
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      const visible = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+
+      if (!visible) return;
+
+      links.forEach((link) => {
+        const isActive = link.getAttribute('data-sidebar-heading') === visible.target.id;
+        link.classList.toggle('bg-indigo-50', isActive);
+        link.classList.toggle('text-indigo-700', isActive);
+        link.classList.toggle('font-700', isActive);
+      });
+    },
+    { rootMargin: '-25% 0px -60% 0px', threshold: [0, 0.25, 0.5, 1] }
+  );
+
+  sections.forEach((section) => observer.observe(section));
+</script>
