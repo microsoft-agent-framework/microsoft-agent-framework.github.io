@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://microsoft-agent-framework.github.io/sitemap-index.xml
