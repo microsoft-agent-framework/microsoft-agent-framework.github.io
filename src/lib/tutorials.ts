@@ -73,7 +73,7 @@ interface ProjectUnit {
   sourceText: string;
 }
 
-const CATEGORY_ORDER = ['agent-essentials', 'advanced-orchestration'];
+const CATEGORY_ORDER = ['agent-essentials', 'agent-capabilities', 'advanced-orchestration'];
 const PHASE_ONE_SAMPLE_FOLDER = '01-get-started';
 
 const CATEGORY_META: Record<string, Omit<LearningPath, 'plannedCount' | 'isPhaseOne' | 'tutorials' | 'series'>> = {
@@ -82,6 +82,12 @@ const CATEGORY_META: Record<string, Omit<LearningPath, 'plannedCount' | 'isPhase
     slug: 'agent-essentials',
     folder: 'agent-essentials',
     description: 'Master the core pillars of the Microsoft Agent Framework. Build a production-ready triage assistant from scratch, mastering tools, memory, and hosting.'
+  },
+  'agent-capabilities': {
+    title: 'Agent Capabilities',
+    slug: 'agent-capabilities',
+    folder: 'agent-capabilities',
+    description: 'Explore advanced agent features like local semantic tool search, multi-modal processing, and complex tool integration.'
   },
   'advanced-orchestration': {
     title: 'Advanced Orchestration',

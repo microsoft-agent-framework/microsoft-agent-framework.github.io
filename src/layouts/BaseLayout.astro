@@ -30,6 +30,15 @@ const pageTitle = title.includes('Agent Academy') ? title : `${title} | Agent Ac
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&family=Plus+Jakarta+Sans:ital,wght@0,200..800;1,200..800&family=JetBrains+Mono:ital,wght@0,400..700;1,400..700&display=swap" rel="stylesheet">
     <title>{pageTitle}</title>
+
+    <!-- Google Analytics 4 -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-8VSWT1X5GP"></script>
+    <script is:inline>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-XXXXXXXXXX');
+    </script>
   </head>
   <body class="min-h-screen bg-surface text-slate-600 antialiased">
     <Navbar />
@@ -128,6 +137,16 @@ const pageTitle = title.includes('Agent Academy') ? title : `${title} | Agent Ac
             await navigator.clipboard.writeText(code.textContent || '');
             button.textContent = 'Copied';
             showCopyToast('Code copied');
+
+            // GA4: Track code copy event
+            if (typeof gtag === 'function') {
+              gtag('event', 'copy_code', {
+                code_language: label,
+                snippet_preview: (code.textContent || '').substring(0, 100),
+                page_title: document.title
+              });
+            }
+
             window.setTimeout(() => {
               button.textContent = 'Copy';
             }, 1200);
@@ -139,6 +158,74 @@ const pageTitle = title.includes('Agent Academy') ? title : `${title} | Agent Ac
 
       enhanceCodeBlocks();
       document.addEventListener('astro:page-load', enhanceCodeBlocks);
+
+      // ── GA4: Scroll depth tracking ──────────────────────────────
+      function trackScrollDepth() {
+        const milestones = [25, 50, 75, 100];
+        const fired = new Set();
+
+        function getScrollPercent() {
+          const scrollTop = window.scrollY;
+          const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+          if (docHeight <= 0) return 100;
+          return Math.round((scrollTop / docHeight) * 100);
+        }
+
+        function checkMilestones() {
+          const pct = getScrollPercent();
+          for (const m of milestones) {
+            if (pct >= m && !fired.has(m)) {
+              fired.add(m);
+              if (typeof gtag === 'function') {
+                gtag('event', 'scroll_depth', {
+                  depth_threshold: m,
+                  page_title: document.title,
+                  page_path: window.location.pathname
+                });
+              }
+            }
+          }
+        }
+
+        let ticking = false;
+        window.addEventListener('scroll', () => {
+          if (!ticking) {
+            window.requestAnimationFrame(() => {
+              checkMilestones();
+              ticking = false;
+            });
+            ticking = true;
+          }
+        }, { passive: true });
+
+        // Check on load in case page is short / already scrolled
+        checkMilestones();
+      }
+
+      // ── GA4: Outbound link tracking ─────────────────────────────
+      function trackOutboundLinks() {
+        document.querySelectorAll('a[href^="http"]').forEach((link) => {
+          const href = (link as HTMLAnchorElement).href;
+          if (href && !href.includes(window.location.hostname)) {
+            link.addEventListener('click', () => {
+              if (typeof gtag === 'function') {
+                gtag('event', 'outbound_click', {
+                  link_url: href,
+                  link_text: (link.textContent || '').trim().substring(0, 80),
+                  page_title: document.title
+                });
+              }
+            });
+          }
+        });
+      }
+
+      trackScrollDepth();
+      trackOutboundLinks();
+      document.addEventListener('astro:page-load', () => {
+        trackScrollDepth();
+        trackOutboundLinks();
+      });
     </script>
   </body>
 </html>

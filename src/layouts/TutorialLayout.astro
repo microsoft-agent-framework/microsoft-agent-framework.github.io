@@ -450,6 +450,15 @@ function dedupeHeadings(items: Array<{ slug: string; text: string; depth: number
     const handleAutoNavigation = (id: string) => {
       if (id) {
         setCompleted(id, true);
+
+        // GA4: Track tutorial completion
+        if (typeof gtag === 'function') {
+          gtag('event', 'tutorial_complete', {
+            tutorial_id: id,
+            page_title: document.title,
+            page_path: window.location.pathname
+          });
+        }
       }
     };
 
