@@ -25,6 +25,8 @@ jobs:
         run: npm install
       - name: Build
         run: npm run build
+      - name: Setup IndexNow key file
+        run: echo "${{ secrets.INDEXNOW_KEY }}" > "./dist/${{ secrets.INDEXNOW_KEY }}.txt"
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
@@ -40,3 +42,11 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+      - name: Submit IndexNow sitemap
+        uses: bojieyang/indexnow-action@v3
+        with:
+          sitemap-location: "https://microsoft-agent-framework.github.io/sitemap-index.xml"
+          key: ${{ secrets.INDEXNOW_KEY }}
+          endpoint: "api.indexnow.org"
+          failure-strategy: "error"
+          lastmod-required: "false"
