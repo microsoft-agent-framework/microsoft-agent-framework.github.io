@@ -6,7 +6,12 @@ export default defineConfig({
   site: 'https://microsoft-agent-framework.github.io',
   base: '/',
   output: 'static',
-  integrations: [mdx(), sitemap()],
+  integrations: [
+    mdx(),
+    sitemap({
+      filter: (page) => !page.endsWith('/sitemap.xml')
+    })
+  ],
   markdown: {
     shikiConfig: {
       theme: 'github-dark',
